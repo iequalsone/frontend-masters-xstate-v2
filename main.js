@@ -8,21 +8,40 @@ const machine = createMachine({
   states: {
     loading: {
       entry: ['loadData'],
+      always: {
+        cond: (ctx) => ctx.count > 100,
+        target: 'success',
+      },
       on: {
-        BLAH: {
-          actions: [raise({ type: 'SUCCESS ' })],
-        },
+        SKIP: [
+          {
+            cond: 'greaterThan100',
+            target: 'loaded',
+          },
+          {
+            target: 'error',
+          },
+        ],
         SUCCESS: {
-          actions: [() => console.log('Assigning data!')],
+          actions: [
+            assign({
+              count: (content, event) => context.count + event.value,
+            }),
+          ],
           target: 'loaded',
         },
       },
     },
     loaded: {},
+    error: {},
+    success: {},
   },
 }).withConfig({
   actions: {
     loadData: () => console.log('configured loading data!'),
+  },
+  guards: {
+    greaterThan100: (context) => context.count > 100,
   },
 });
 
