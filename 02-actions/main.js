@@ -10,7 +10,7 @@ const playerMachine = createMachine({
     loading: {
       on: {
         LOADED: {
-          // Add an action here to assign the song data
+          actions: [() => console.log('data loaded')],
           target: 'playing',
         },
       },
@@ -22,7 +22,9 @@ const playerMachine = createMachine({
     },
     playing: {
       // When this state is entered, add an action to play the audio
+      entry: ['playAudio'],
       // When this state is exited, add an action to pause the audio
+      exit: ['pauseAudio'],
       on: {
         PAUSE: { target: 'paused' },
       },
@@ -31,25 +33,37 @@ const playerMachine = createMachine({
   on: {
     SKIP: {
       // Add an action to skip the song
+      actions: ['skipSong'],
       target: 'loading',
     },
     LIKE: {
       // Add an action to like the song
+      actions: ['likeSong'],
     },
     UNLIKE: {
       // Add an action to unlike the song
+      actions: ['unlikeSong'],
     },
     DISLIKE: {
       // Add two actions to dislike the song and raise the skip event
+      actions: ['dislikeSong', raise({ type: 'SKIP' })],
     },
     VOLUME: {
       // Add an action to assign to the volume
+      actions: ['volumeAssigned'],
     },
   },
 }).withConfig({
   actions: {
     // Add implementations for the actions here, if you'd like
     // For now you can just console.log something
+    playAudio: () => console.log('Play audio'),
+    pauseAudio: () => console.log('Pause audio'),
+    skipSong: () => console.log('Skip song'),
+    likeSong: () => console.log('Song liked'),
+    unlikeSong: () => console.log('Song unliked'),
+    dislikeSong: () => console.log('Song disliked'),
+    volumeAssigned: () => console.log('Assigned volume'),
   },
 });
 
