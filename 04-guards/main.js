@@ -21,35 +21,43 @@ const playerMachine = createMachine({
       on: {
         LOADED: {
           actions: 'assignSongData',
-          target: 'playing',
+          target: 'ready',
         },
       },
     },
-    paused: {
-      on: {
-        PLAY: { target: 'playing' },
-      },
-    },
-    playing: {
-      entry: 'playAudio',
-      exit: 'pauseAudio',
-      on: {
-        PAUSE: { target: 'paused' },
-      },
-      // Add an eventless transition here that always goes to 'paused'
-      // when `elapsed` value is >= the `duration` value
-      always: {
-        cond: (ctx) => ctx.elapsed >= ctx.duration,
-        target: 'paused',
+    ready: {
+      initial: 'playing',
+      states: {
+        paused: {
+          on: {
+            PLAY: { target: 'playing' },
+          },
+        },
+        playing: {
+          entry: 'playAudio',
+          exit: 'pauseAudio',
+          on: {
+            PAUSE: { target: 'paused' },
+          },
+          // Add an eventless transition here that always goes to 'paused'
+          // when `elapsed` value is >= the `duration` value
+          always: {
+            cond: (ctx) => ctx.elapsed >= ctx.duration,
+            target: 'paused',
+          },
+        },
       },
     },
   },
   on: {
     SKIP: {
       actions: 'skipSong',
-      target: 'loading',
+      target: '#loading',
     },
     LIKE: {
+      cond: [
+        
+      ]
       actions: 'likeSong',
     },
     UNLIKE: {
