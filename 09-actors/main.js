@@ -39,7 +39,7 @@ function createFakeAudio(duration) {
   };
 }
 
-const invokeAudio = (ctx) => (sendBack, receive) => {
+const invokeAudio = (ctx, e) => (sendBack, receive) => {
   const audio = createFakeAudio(ctx.duration);
 
   audio.addEventListener('timeupdate', () => {
@@ -62,6 +62,10 @@ const invokeAudio = (ctx) => (sendBack, receive) => {
         break;
     }
   });
+
+  return () => {
+    console.log('Clean up!')
+  }
 };
 
 let songCounter = 0;
@@ -99,11 +103,22 @@ const playerMachine = createMachine({
           // You can use the ready-made `loadSong` function.
           // Add an `onDone` transition to assign the song data
           // and transition to 'ready.hist'
+          invoke: {
+            src: (ctx, e) => loadSong(),
+            onDone: {
+              actions: 'assignSongData',
+              target: 'ready.hist',
+            },
+          },
         },
         ready: {
           // Invoke the audio callback (use `src: invokeAudio`)
           // Make sure to give this invocation an ID of 'audio'
           // so that it can receive events that this machine sends it
+          invoke: {
+            id: 'audio',
+            src: invokeAudio,
+          },
           initial: 'paused',
           states: {
             paused: {
@@ -214,8 +229,12 @@ const playerMachine = createMachine({
     // These actions should send events to that invoked audio actor:
     // playAudio should send 'PLAY'
     // pauseAudio should send 'PAUSE'
-    playAudio: () => {},
-    pauseAudio: () => {},
+    playAudio: send({ type: 'PLAY' }, {
+      to: 'audio'
+    }),
+    pauseAudio: send({ type: 'PAUSE' }, {
+      to: 'audio'
+    }),
   },
   guards: {
     volumeWithinRange: (_, e) => {
