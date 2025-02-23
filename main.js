@@ -7,34 +7,30 @@ const machine = createMachine({
   initial: 'loading',
   states: {
     loading: {
-      entry: ['loadData'],
-      always: {
-        cond: (ctx) => ctx.count > 100,
-        target: 'success',
-      },
-      on: {
-        SKIP: [
-          {
-            cond: 'greaterThan100',
-            target: 'loaded',
+      initial: 'gettingData',
+      states: {
+        gettingData: {
+          after: {
+            1000: 'gettingMoreData',
           },
-          {
-            target: 'error',
+        },
+        gettingMoreData: {
+          after: {
+            500: 'finished',
           },
-        ],
-        SUCCESS: {
-          actions: [
-            assign({
-              count: (content, event) => context.count + event.value,
-            }),
-          ],
-          target: 'loaded',
+        },
+        finished: {
+          type: 'final',
         },
       },
+      onDone: {
+        target: 'loaded',
+        actions: () => console.log('Done!'),
+      },
     },
-    loaded: {},
-    error: {},
-    success: {},
+    loaded: {
+      type: 'final',
+    },
   },
 }).withConfig({
   actions: {
