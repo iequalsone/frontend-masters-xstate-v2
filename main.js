@@ -1,50 +1,103 @@
 import './style.css';
-import { createMachine, interpret } from 'xstate';
+import { createMachine, interpret, send } from 'xstate';
 
-import { raise } from 'xstate/lib/actions';
+// function countBehavior(state, event) {
+//   if (event.type == 'INC') {
+//     return {
+//       ...state,
+//       count: state.count + 1,
+//     };
+//   }
+
+//   return state;
+// }
+
+// function createActor(behavior, initialState) {
+//   let currentState = initialState;
+//   const listeners = new Set();
+
+//   return {
+//     send: (event) => {
+//       currentState = behavior(currentState, event);
+//       listeners.forEach((listener) => {
+//         listener(currentState);
+//       });
+//     },
+//     subscribe: (listener) => {
+//       listeners.add(listener);
+//       listener(currentState);
+//     },
+//     getSnapshot: () => currentState,
+//   };
+// }
+
+// const actor = createActor(countBehavior, { count: 42 });
+
+// window.actor = actor;
+
+const callback = (sendBack, receive) => {
+  let timeout;
+  receive((event) => {
+    console.log('Received:', event);
+    timeout = setTimeout(() => {
+      sendBack({ type: 'PING' });
+    }, 1000);
+  });
+
+  return () => {
+    clearTimeout(timeout);
+  };
+};
+
+const fetchMachine = createMachine({
+  initial: 'fetching',
+  states: {
+    fetching: {
+      after: {
+        1000: 'success',
+      },
+    },
+    success: {
+      type: 'final',
+      data: {
+        count: 42,
+      },
+    },
+  },
+});
 
 const machine = createMachine({
   initial: 'loading',
   states: {
     loading: {
-      initial: 'gettingData',
-      states: {
-        gettingData: {
-          after: {
-            1000: 'gettingMoreData',
-          },
-        },
-        gettingMoreData: {
-          after: {
-            500: 'finished',
-          },
-        },
-        finished: {
-          type: 'final',
+      invoke: {
+        id: 'fetchNumber',
+        src: fetchMachine,
+        onDone: {
+          target: 'success',
+          actions: (_, event) => console.log('DONE!', event),
         },
       },
-      onDone: {
-        target: 'loaded',
-        actions: () => console.log('Done!'),
+      on: {
+        NOTIFY: {
+          actions: send('ANY_EVENT', {
+            to: 'fetchNumber',
+          }),
+        },
+        PING: {
+          target: 'success',
+        },
       },
     },
-    loaded: {
-      type: 'final',
-    },
-  },
-}).withConfig({
-  actions: {
-    loadData: () => console.log('configured loading data!'),
-  },
-  guards: {
-    greaterThan100: (context) => context.count > 100,
+    success: {},
+    canceled: {},
   },
 });
 
 const service = interpret(machine).start();
 
 service.subscribe((state) => {
-  console.log(state.value, state.actions);
+  console.log(state.value);
 });
 
 window.service = service;
